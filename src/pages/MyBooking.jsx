@@ -1,25 +1,76 @@
 import { useEffect, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
-import {
-  booking as mockBooking,
-  queue,
-} from "../data/mockData";
+import { api } from "../api";
+import { booking as mockBooking, queue as mockQueue } from "../data/mockData";
 
 function MyBooking() {
   const [booking, setBooking] = useState(null);
+  const [queueInfo, setQueueInfo] = useState(mockQueue);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedBooking = localStorage.getItem("farmoraBooking");
+    async function loadBooking() {
+      setLoading(true);
+      try {
+        const active = await api.getActiveBooking();
+        if (active) {
+          // Normalize structure between API and legacy UI
+          const tokenStr = active.token?.token_number || active.token || "TKN-1-001";
+          const cropName = active.crop?.name || active.crop || "Wheat";
+          const centreName = active.centre?.name || active.centre || "Central Grain Mandi - Ludhiana";
+          const slotDate = active.slot?.slot_date || active.date || new Date().toISOString().slice(0, 10);
+          const slotTime = active.slot?.start_time ? `${active.slot.start_time.slice(0, 5)} - ${active.slot.end_time.slice(0, 5)}` : (active.time || "09:00 - 12:00");
+          const farmerCode = active.farmer?.farmer_id || active.farmerId || localStorage.getItem("farmerId") || "FARM-1001";
+          const qty = active.quantity > 100 ? (active.quantity / 100).toFixed(1) : active.quantity;
 
-    if (savedBooking) {
-      setBooking(JSON.parse(savedBooking));
-    } else {
-      // Use demo booking from shared mock data
-      setBooking(mockBooking);
+          setBooking({
+            id: active.id,
+            bookingId: active.booking_id || active.bookingId || "BK-001",
+            token: tokenStr,
+            crop: cropName,
+            centre: centreName,
+            date: slotDate,
+            time: slotTime,
+            farmerId: farmerCode,
+            quantity: qty,
+            status: active.status || "CONFIRMED",
+          });
+
+          // Fetch queue info for this centre
+          const qData = await api.getQueue(active.centre_id || 1);
+          if (qData) {
+            const yourTok = qData.your_tokens?.[0];
+            const summary = qData.queue_summary;
+            setQueueInfo({
+              farmersAhead: yourTok ? Math.max(0, yourTok.queue_position - 1) : 2,
+              estimatedWait: yourTok?.estimated_wait_minutes || 20,
+              currentToken: summary?.currently_serving || "TKN-1-001",
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading booking:", err);
+      } finally {
+        setLoading(false);
+      }
     }
+    loadBooking();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="booking-page">
+        <header className="dashboard-header">
+          <div className="brand">🚜 FARMORA</div>
+        </header>
+        <main className="booking-container">
+          <p>Loading your booking details...</p>
+        </main>
+      </div>
+    );
+  }
 
   if (!booking) {
     return (
@@ -50,6 +101,7 @@ function MyBooking() {
   }
 
   const qrData = JSON.stringify({
+    bookingId: booking.bookingId,
     token: booking.token,
     farmerId: booking.farmerId,
     centre: booking.centre,
@@ -57,8 +109,7 @@ function MyBooking() {
     time: booking.time,
   });
 
-  const queuePosition =
-    queue.farmerToken - queue.currentToken;
+  const queuePosition = queueInfo.farmersAhead ?? 2;
 
   return (
     <div className="booking-page">

@@ -1,20 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
 
 function Login() {
   const [farmerId, setFarmerId] = useState("");
+  const [password, setPassword] = useState("password123");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (!farmerId.trim()) {
-      alert("Please enter your Farmer ID");
+      setError("Please enter your Farmer ID or Username");
       return;
     }
 
-    localStorage.setItem("farmerId", farmerId);
-    navigate("/dashboard");
+    setLoading(true);
+    try {
+      await api.login(farmerId, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Login failed. Check credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,25 +42,41 @@ function Login() {
           Farmer Procurement Slot Booking
         </p>
 
+        {error && (
+          <div style={{ background: "#fee2e2", color: "#dc2626", padding: "8px 12px", borderRadius: "6px", marginBottom: "12px", fontSize: "14px" }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin}>
-          <label>Farmer ID</label>
+          <label>Farmer ID / Username</label>
 
           <input
             type="text"
-            placeholder="Enter your Farmer ID"
+            placeholder="Enter Farmer ID (e.g. FARM-1001 or farmer1)"
             value={farmerId}
             onChange={(e) => setFarmerId(e.target.value)}
+            disabled={loading}
           />
 
-          <button type="submit">
-            Login
+          <label style={{ marginTop: "12px" }}>Password</label>
+          <input
+            type="password"
+            placeholder="Password (default: password123)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
+
+          <button type="submit" disabled={loading} style={{ marginTop: "16px" }}>
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <p className="help-text">
-          Don't have a smartphone?
+          Demo Farmer IDs: <strong>FARM-1001</strong>, <strong>FARM-1002</strong>, <strong>FARM-1003</strong>
           <br />
-          Visit your nearest procurement centre for assisted booking.
+          Password: <strong>password123</strong>
         </p>
       </div>
     </div>

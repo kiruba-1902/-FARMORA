@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
 import {
   LineChart,
   Line,
@@ -9,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const priceHistory = [
+const defaultPriceHistory = [
   { day: "Mon", price: 2240 },
   { day: "Tue", price: 2260 },
   { day: "Wed", price: 2275 },
@@ -19,32 +21,32 @@ const priceHistory = [
   { day: "Today", price: 2310 },
 ];
 
-const crops = [
-  {
-    name: "Paddy",
-    icon: "🌾",
-    price: 2310,
-    change: "+₹30",
-    percentage: "+1.3%",
-  },
-  {
-    name: "Wheat",
-    icon: "🌾",
-    price: 2275,
-    change: "+₹15",
-    percentage: "+0.7%",
-  },
-  {
-    name: "Maize",
-    icon: "🌽",
-    price: 2180,
-    change: "-₹20",
-    percentage: "-0.9%",
-  },
-];
-
 function Prices() {
   const navigate = useNavigate();
+  const [cropsList, setCropsList] = useState([]);
+  const [mainPrice, setMainPrice] = useState({ name: "Paddy", price: 2310, change: "+₹30", percentage: "+1.3%" });
+
+  useEffect(() => {
+    async function loadPrices() {
+      try {
+        const prices = await api.getPrices();
+        if (prices && prices.length > 0) {
+          const formatted = prices.map((p) => ({
+            name: p.crop?.name || `Crop #${p.crop_id}`,
+            icon: p.crop?.name === "Cotton" ? "🌿" : p.crop?.name === "Maize" ? "🌽" : "🌾",
+            price: Math.round(p.price_per_kg * 100),
+            change: "+₹25",
+            percentage: "+1.1%",
+          }));
+          setCropsList(formatted);
+          setMainPrice(formatted[0]);
+        }
+      } catch (err) {
+        console.warn("Failed to load prices:", err);
+      }
+    }
+    loadPrices();
+  }, []);
 
   return (
     <div className="prices-page">
@@ -82,73 +84,48 @@ function Prices() {
         </div>
 
         {/* Main Price Card */}
-
         <div className="main-price-card">
-
           <div>
-
             <span className="crop-label">
-              🌾 Paddy
+              {mainPrice.icon || "🌾"} {mainPrice.name}
             </span>
 
             <h2>
-              ₹2,310
+              ₹{mainPrice.price.toLocaleString()}
               <small> / Quintal</small>
             </h2>
 
             <p className="price-up">
-              ↑ ₹30 (+1.3%) from yesterday
+              ↑ ₹30 (+1.3%) MSP effective
             </p>
-
           </div>
 
           <div className="price-icon">
             📈
           </div>
-
         </div>
 
         {/* Price History */}
-
         <div className="price-panel">
-
           <div className="panel-heading">
-
             <div>
               <h2>Price History</h2>
-
               <p>
-                Paddy procurement price — Last 7 days
+                {mainPrice.name} procurement price — Last 7 days
               </p>
             </div>
-
             <span className="period-badge">
               7 Days
             </span>
-
           </div>
 
           <div className="chart-container">
-
             <ResponsiveContainer width="100%" height={300}>
-
-              <LineChart data={priceHistory}>
-
+              <LineChart data={defaultPriceHistory}>
                 <CartesianGrid strokeDasharray="3 3" />
-
                 <XAxis dataKey="day" />
-
-                <YAxis
-                  domain={["dataMin - 20", "dataMax + 20"]}
-                />
-
-                <Tooltip
-                  formatter={(value) => [
-                    `₹${value}`,
-                    "Price",
-                  ]}
-                />
-
+                <YAxis domain={["dataMin - 20", "dataMax + 20"]} />
+                <Tooltip formatter={(value) => [`₹${value}`, "Price"]} />
                 <Line
                   type="monotone"
                   dataKey="price"
@@ -156,123 +133,70 @@ function Prices() {
                   strokeWidth={3}
                   dot={{ r: 5 }}
                 />
-
               </LineChart>
-
             </ResponsiveContainer>
-
           </div>
-
         </div>
 
         {/* AI Insight */}
-
         <div className="ai-price-card">
-
           <div className="ai-icon">
             🤖
           </div>
-
           <div>
-
-            <h2>
-              AI Price Trend
-            </h2>
-
+            <h2>AI Price Trend</h2>
             <p>
-              Based on recent price movement, Farmora predicts
-              that Paddy prices may remain stable or increase
-              slightly over the next few days.
+              Based on recent procurement volume, Farmora predicts
+              that {mainPrice.name} prices may remain steady or trend
+              upwards over the upcoming procurement cycle.
             </p>
-
             <div className="prediction">
-
-              <span>
-                🔮 Predicted Trend
-              </span>
-
-              <strong>
-                ↗ Slight Increase
-              </strong>
-
+              <span>🔮 Predicted Trend</span>
+              <strong>↗ Stable / Positive</strong>
             </div>
-
           </div>
-
         </div>
 
         {/* Price Alert */}
-
         <div className="price-alert">
-
           <span>🔔</span>
-
           <div>
-
-            <h3>
-              Price Alert
-            </h3>
-
+            <h3>Price Alert</h3>
             <p>
-              Get notified when Paddy price changes
-              significantly.
+              Get notified when crop procurement prices change.
             </p>
-
           </div>
-
           <button>
             Enable Alert
           </button>
-
         </div>
 
         {/* Other Crops */}
-
         <h2 className="other-crops-title">
-          Other Crop Prices
+          All Procurement Crops
         </h2>
 
         <div className="crop-grid">
-
-          {crops.map((crop) => (
-
-            <div className="crop-card" key={crop.name}>
-
+          {cropsList.map((crop) => (
+            <div className="crop-card" key={crop.name} onClick={() => setMainPrice(crop)} style={{ cursor: "pointer" }}>
               <div className="crop-header">
-
                 <span className="crop-icon">
                   {crop.icon}
                 </span>
-
                 <div>
                   <h3>{crop.name}</h3>
-
-                  <p>
-                    Procurement Price
-                  </p>
+                  <p>Procurement MSP</p>
                 </div>
-
               </div>
-
               <h2>
-                ₹{crop.price}
+                ₹{crop.price.toLocaleString()}
                 <small> / Qtl</small>
               </h2>
-
-              <div
-                className={
-                  crop.change.startsWith("+")
-                    ? "crop-up"
-                    : "crop-down"
-                }
-              >
+              <div className="crop-up">
                 {crop.change} ({crop.percentage})
               </div>
-
             </div>
-
           ))}
-
         </div>
 
       </main>

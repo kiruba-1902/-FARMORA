@@ -1,10 +1,58 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { farmer, price, booking, queue } from "../data/mockData";
+import { api } from "../api";
+import { farmer as mockFarmer, price as mockPrice, queue as mockQueue } from "../data/mockData";
 
 function Dashboard() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(mockFarmer);
+  const [currentPrice, setCurrentPrice] = useState(mockPrice);
+  const [queueInfo, setQueueInfo] = useState(mockQueue);
+  const [farmerId, setFarmerId] = useState(localStorage.getItem("farmerId") || mockFarmer.farmerId);
 
-  const farmerId = localStorage.getItem("farmerId") || farmer.farmerId;
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const farmerData = await api.getFarmer();
+        if (farmerData) {
+          setProfile(farmerData);
+          if (farmerData.farmer_id) setFarmerId(farmerData.farmer_id);
+        }
+
+        const prices = await api.getPrices();
+        if (prices && prices.length > 0) {
+          const firstPrice = prices[0];
+          setCurrentPrice({
+            crop: firstPrice.crop?.name || "Paddy",
+            current: Math.round(firstPrice.price_per_kg * 100), // per quintal
+            change: 30,
+            percentage: 1.3,
+          });
+        }
+
+        const queueData = await api.getQueue();
+        if (queueData) {
+          const yourToken = queueData.your_tokens?.[0];
+          const summary = queueData.queue_summary;
+          setQueueInfo({
+            farmerAhead: yourToken?.queue_position ? yourToken.queue_position - 1 : summary?.waiting_count || 4,
+            estimatedWait: yourToken?.estimated_wait_minutes || 25,
+            serving: summary?.currently_serving || "TKN-1-001",
+          });
+        }
+      } catch (err) {
+        console.warn("Error fetching dashboard data:", err);
+      }
+    }
+    loadData();
+  }, []);
+
+  const handleLogout = () => {
+    api.logout();
+    navigate("/");
+  };
+
+  const displayName = profile.name ? profile.name.split(" ")[0] : "Farmer";
 
   return (
     <div className="dashboard-page">
@@ -18,18 +66,27 @@ function Dashboard() {
           <p>Farmer Procurement Portal</p>
         </div>
 
-        <div className="farmer-profile">
-          <span>👤</span>
-          <div>
-            <strong>{farmerId}</strong>
-            <small>Farmer</small>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="farmer-profile">
+            <span>👤</span>
+            <div>
+              <strong>{farmerId}</strong>
+              <small>{profile.name || "Farmer"}</small>
+            </div>
           </div>
+          <button 
+            onClick={handleLogout}
+            style={{ padding: "6px 10px", fontSize: "12px", background: "rgba(255,255,255,0.15)", border: "none", color: "inherit", borderRadius: "6px", cursor: "pointer" }}
+            title="Log Out"
+          >
+            Exit
+          </button>
         </div>
       </header>
 
       {/* Welcome */}
       <section className="welcome-section">
-        <h1>Good Morning, {farmer.name.split(" ")[0]}! 👋</h1>
+        <h1>Good Morning, {displayName}! 👋</h1>
         <p>
           Manage your procurement, slots and payments easily.
         </p>
@@ -41,12 +98,12 @@ function Dashboard() {
         <div className="info-card">
           <span className="card-icon">🌾</span>
           <div>
-            <p>Today's {price.crop} Price</p>
-            <h2>₹{price.current.toLocaleString()}</h2>
+            <p>Today's {currentPrice.crop} Price</p>
+            <h2>₹{currentPrice.current.toLocaleString()} / Qtl</h2>
 
-            <span className={price.change >= 0 ? "positive" : "negative"}>
-              {price.change >= 0 ? "↑" : "↓"} ₹
-              {Math.abs(price.change)} from yesterday
+            <span className={currentPrice.change >= 0 ? "positive" : "negative"}>
+              {currentPrice.change >= 0 ? "↑" : "↓"} ₹
+              {Math.abs(currentPrice.change)} from yesterday
             </span>
           </div>
         </div>
@@ -56,10 +113,10 @@ function Dashboard() {
           <div>
             <p>Current Queue</p>
             <h2>
-              {queue.farmerToken - queue.currentToken} Farmers
+              {queueInfo.farmerAhead || 3} Farmers Ahead
             </h2>
             <span>
-              Estimated wait: {queue.estimatedWait} min
+              Estimated wait: {queueInfo.estimatedWait || 20} min
             </span>
           </div>
         </div>

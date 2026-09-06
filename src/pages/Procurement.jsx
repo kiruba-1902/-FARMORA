@@ -1,18 +1,61 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
+import { procurement as mockProcurement, payment as mockPayment } from "../data/mockData";
 
 function Procurement() {
   const navigate = useNavigate();
 
-  const procurement = {
-    token: "A-124",
-    crop: "Paddy",
-    quantity: 25,
-    rate: 2310,
-    centre: "Central Procurement Centre",
-    status: "Weighing",
-  };
+  const [procurement, setProcurement] = useState({
+    token: "TKN-1-001",
+    crop: "Wheat",
+    quantity: 12,
+    rate: 2275,
+    centre: "Central Grain Mandi - Ludhiana",
+    status: "Procurement Scheduled",
+  });
 
-  const totalAmount = procurement.quantity * procurement.rate;
+  const [paymentData, setPaymentData] = useState({
+    amount: 27300,
+    status: "Pending",
+  });
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const active = await api.getActiveBooking();
+        if (active) {
+          const qty = active.quantity > 100 ? active.quantity / 100 : active.quantity;
+          const cropName = active.crop?.name || active.crop || "Wheat";
+          const centreName = active.centre?.name || active.centre || "Central Grain Mandi - Ludhiana";
+          const tokenStr = active.token?.token_number || active.token || "TKN-1-001";
+
+          setProcurement({
+            token: tokenStr,
+            crop: cropName,
+            quantity: qty,
+            rate: 2275,
+            centre: centreName,
+            status: active.status || "CONFIRMED",
+          });
+
+          // Fetch linked payment
+          const payment = await api.getPayment(active.id || 1);
+          if (payment) {
+            setPaymentData({
+              amount: payment.amount || qty * 2275,
+              status: payment.payment_status || "Pending",
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load procurement status:", err);
+      }
+    }
+    loadData();
+  }, []);
+
+  const totalAmount = paymentData.amount || procurement.quantity * procurement.rate;
 
   const steps = [
     {

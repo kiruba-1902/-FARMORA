@@ -1,30 +1,51 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api";
+import { queue as mockQueue } from "../data/mockData";
 
 function Queue() {
   const navigate = useNavigate();
 
-  const [currentToken, setCurrentToken] = useState(117);
+  const [currentToken, setCurrentToken] = useState("TKN-1-001");
+  const [farmerToken, setFarmerToken] = useState("TKN-1-002");
+  const [queuePosition, setQueuePosition] = useState(2);
+  const [estimatedTime, setEstimatedTime] = useState(20);
+  const [queueList, setQueueList] = useState([]);
+  const [centreName, setCentreName] = useState("Central Grain Mandi - Ludhiana");
 
-  const farmerToken = 124;
+  const fetchQueueData = async () => {
+    try {
+      const data = await api.getQueue(1);
+      if (data) {
+        if (data.centre_name) setCentreName(data.centre_name);
 
-  const queuePosition = farmerToken - currentToken;
-
-  const estimatedTime = queuePosition * 5;
-
-  // Demo simulation
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentToken((previous) => {
-        if (previous < farmerToken - 1) {
-          return previous + 1;
+        const summary = data.queue_summary;
+        if (summary?.currently_serving) {
+          setCurrentToken(summary.currently_serving);
         }
 
-        return previous;
-      });
-    }, 10000);
+        const myTok = data.your_tokens?.[0];
+        if (myTok) {
+          setFarmerToken(myTok.token_number);
+          setQueuePosition(myTok.queue_position);
+          setEstimatedTime(myTok.estimated_wait_minutes || myTok.queue_position * 10);
+        }
 
-    return () => clearInterval(timer);
+        if (data.tokens) {
+          setQueueList(data.tokens);
+        } else if (data.queue_flow) {
+          setQueueList(data.queue_flow);
+        }
+      }
+    } catch (err) {
+      console.warn("Error fetching queue:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchQueueData();
+    const interval = setInterval(fetchQueueData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -69,145 +90,69 @@ function Queue() {
         </div>
 
         {/* Main Queue Cards */}
-
         <div className="queue-grid">
-
           <div className="queue-card">
-
-            <span className="queue-icon">
-              🎫
-            </span>
-
+            <span className="queue-icon">🎫</span>
             <p>Now Serving</p>
-
-            <h2>
-              A-{currentToken}
-            </h2>
-
+            <h2>{currentToken}</h2>
           </div>
 
           <div className="queue-card highlight">
-
-            <span className="queue-icon">
-              👤
-            </span>
-
+            <span className="queue-icon">👤</span>
             <p>Your Token</p>
-
-            <h2>
-              A-{farmerToken}
-            </h2>
-
+            <h2>{farmerToken}</h2>
           </div>
 
           <div className="queue-card">
-
-            <span className="queue-icon">
-              👥
-            </span>
-
+            <span className="queue-icon">👥</span>
             <p>Queue Position</p>
-
-            <h2>
-              #{queuePosition}
-            </h2>
-
+            <h2>#{queuePosition}</h2>
           </div>
 
           <div className="queue-card">
-
-            <span className="queue-icon">
-              ⏱️
-            </span>
-
+            <span className="queue-icon">⏱️</span>
             <p>Estimated Wait</p>
-
-            <h2>
-              {estimatedTime} min
-            </h2>
-
+            <h2>{estimatedTime} min</h2>
           </div>
-
         </div>
 
         {/* Progress */}
-
         <div className="queue-panel">
-
           <div className="queue-panel-header">
-
             <div>
-
-              <h2>
-                Procurement Queue
-              </h2>
-
-              <p>
-                Central Procurement Centre
-              </p>
-
+              <h2>Procurement Queue</h2>
+              <p>{centreName}</p>
             </div>
-
             <div className="queue-count">
-              {queuePosition} farmers ahead
+              {queuePosition > 1 ? `${queuePosition - 1} farmers ahead` : "You are next in line"}
             </div>
-
           </div>
 
-          <div className="progress-container">
-
-            <div
-              className="progress-bar"
-              style={{
-                width: `${Math.min(
-                  ((currentToken - 117) /
-                    (farmerToken - 117)) *
-                    100,
-                  100
-                )}%`,
-              }}
-            ></div>
-
-          </div>
-
-          <div className="queue-list">
-
-            {Array.from(
-              { length: 8 },
-              (_, index) => currentToken + index
-            ).map((token) => (
-
-              <div
-                key={token}
-                className={`queue-item ${
-                  token === farmerToken
-                    ? "your-token"
-                    : token === currentToken
-                    ? "serving-token"
-                    : ""
-                }`}
-              >
-
-                <span>
-                  A-{token}
-                </span>
-
-                <span>
-
-                  {token === currentToken
-                    ? "🔄 Now Serving"
-                    : token === farmerToken
-                    ? "👤 You"
-                    : "Waiting"}
-
-                </span>
-
+          <div className="queue-list" style={{ marginTop: "15px" }}>
+            {queueList.length > 0 ? (
+              queueList.map((item, idx) => {
+                const tokNum = item.token_number || item;
+                const isServing = tokNum === currentToken;
+                const isMe = tokNum === farmerToken;
+                return (
+                  <div
+                    key={tokNum || idx}
+                    className={`queue-item ${isMe ? "your-token" : isServing ? "serving-token" : ""}`}
+                  >
+                    <span>{tokNum}</span>
+                    <span>
+                      {isServing ? "🔄 Now Serving" : isMe ? "👤 Your Token" : "Waiting"}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="queue-item your-token">
+                <span>{farmerToken}</span>
+                <span>👤 Your Token (In Queue)</span>
               </div>
-
-            ))}
-
+            )}
           </div>
-
         </div>
 
         {/* Information */}
