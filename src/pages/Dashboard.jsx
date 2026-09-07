@@ -9,6 +9,8 @@ function Dashboard() {
   const [currentPrice, setCurrentPrice] = useState(mockPrice);
   const [queueInfo, setQueueInfo] = useState(mockQueue);
   const [farmerId, setFarmerId] = useState(localStorage.getItem("farmerId") || mockFarmer.farmerId);
+  const currentUser = api.getCurrentUser();
+  const userRole = currentUser?.role || "FARMER";
 
   useEffect(() => {
     async function loadData() {
@@ -218,6 +220,11 @@ function Dashboard() {
             <span>Live Queue</span>
           </button>
 
+          <button onClick={() => navigate("/procurement")}>
+            📦
+            <span>Procurement</span>
+          </button>
+
         </div>
       </section>
 
@@ -237,6 +244,16 @@ function Dashboard() {
         <button onClick={() => navigate("/my-booking")}>
           🎫
           <span>Token</span>
+        </button>
+
+        <button onClick={() => navigate("/queue")}>
+          🕐
+          <span>Queue</span>
+        </button>
+
+        <button onClick={() => navigate("/prices")}>
+          🌾
+          <span>Prices</span>
         </button>
 
         <button onClick={() => navigate("/procurement")}>

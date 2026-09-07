@@ -107,7 +107,6 @@ function Booking() {
         <button
           className="back-button"
           onClick={() => navigate("/dashboard")}
-          style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "inherit", padding: "6px 12px", borderRadius: "6px", cursor: "pointer" }}
         >
           ← Dashboard
         </button>
@@ -122,7 +121,7 @@ function Booking() {
         </p>
 
         {error && (
-          <div style={{ background: "#fee2e2", color: "#dc2626", padding: "10px", borderRadius: "8px", marginBottom: "15px" }}>
+          <div className="error-banner">
             {error}
           </div>
         )}

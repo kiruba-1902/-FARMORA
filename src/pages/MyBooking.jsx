@@ -218,7 +218,7 @@ function MyBooking() {
 
             <p>
               Estimated waiting time:{" "}
-              <strong>{queue.estimatedWait} minutes</strong>
+              <strong>{queueInfo.estimatedWait} minutes</strong>
             </p>
           </div>
 
