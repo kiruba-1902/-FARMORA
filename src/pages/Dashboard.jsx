@@ -73,7 +73,6 @@ function Dashboard() {
             <span>👤</span>
             <div>
               <strong>{farmerId}</strong>
-              <small>{profile.name || "Farmer"}</small>
             </div>
           </div>
           <button 
@@ -88,7 +87,7 @@ function Dashboard() {
 
       {/* Welcome */}
       <section className="welcome-section">
-        <h1>Good Morning, {displayName}! 👋</h1>
+        <h1>Welcome, {farmerId}! 👋</h1>
         <p>
           Manage your procurement, slots and payments easily.
         </p>
