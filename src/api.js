@@ -56,7 +56,7 @@ export const api = {
   /**
    * 1. Authentication
    */
-  async login(usernameOrFarmerId, password = "password123") {
+  async login(usernameOrFarmerId, password = "password123", displayName = "") {
     try {
       const res = await request("/login", {
         method: "POST",
@@ -69,6 +69,7 @@ export const api = {
       if (res.success && res.data) {
         const { access_token, user } = res.data;
         localStorage.setItem("access_token", access_token);
+        if (displayName) user.farmer_name = displayName;
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("farmerId", user.farmer_code || user.username);
         if (user.farmer_id) {
@@ -80,19 +81,22 @@ export const api = {
     } catch (err) {
       // Fallback: If backend is not reachable, allow mock session for UI demo
       console.warn("Backend offline or login error, falling back to local session");
+      const nameToUse = displayName || usernameOrFarmerId || mockFarmer.name;
       localStorage.setItem("farmerId", usernameOrFarmerId || mockFarmer.farmerId);
       localStorage.setItem("user", JSON.stringify({
         username: usernameOrFarmerId,
         farmer_code: usernameOrFarmerId,
         role: "FARMER",
-        farmer_name: mockFarmer.name,
+        farmer_name: nameToUse,
+        name: nameToUse,
       }));
       return {
         access_token: "mock-token",
         user: {
           username: usernameOrFarmerId,
           farmer_code: usernameOrFarmerId,
-          farmer_name: mockFarmer.name,
+          farmer_name: nameToUse,
+          name: nameToUse,
           role: "FARMER",
         },
       };
@@ -186,8 +190,11 @@ export const api = {
       const res = await request(`/farmer/${id}`);
       return res.data;
     } catch {
+      const currentUser = this.getCurrentUser();
+      const currentName = currentUser?.farmer_name || currentUser?.name || localStorage.getItem("farmerId") || mockFarmer.name;
       return {
         ...mockFarmer,
+        name: currentName,
         farmer_id: localStorage.getItem("farmerId") || mockFarmer.farmerId,
       };
     }

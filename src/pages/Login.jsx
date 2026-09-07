@@ -38,7 +38,8 @@ function Login() {
         await api.officerLogin(username, password);
         navigate("/officer");
       } else {
-        await api.login(username, password);
+        const nameToPass = isRegister && regName.trim() ? regName.trim() : username.trim();
+        await api.login(username, password, nameToPass);
         navigate("/dashboard");
       }
     } catch (err) {
