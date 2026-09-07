@@ -164,33 +164,25 @@ function OfficerDashboard() {
                   <span>Processed</span>
                 </div>
               </div>
-              <div className="officer-metric-card">
-                <span className="officer-metric-icon">⏱️</span>
+              <div className="officer-metric-card" style={{ background: "#e7f6ec", borderColor: "#a7f3d0" }}>
+                <span className="officer-metric-icon">💳</span>
                 <div>
-                  <p>Avg. Service Time</p>
-                  <h2>{s?.avg_service_time_min ?? "—"} min</h2>
-                  <span>Per farmer</span>
-                </div>
-              </div>
-              <div className="officer-metric-card">
-                <span className="officer-metric-icon">✕</span>
-                <div>
-                  <p>Cancelled</p>
-                  <h2>{s?.cancelled ?? "—"}</h2>
-                  <span>No-shows</span>
+                  <p>DBT Payments</p>
+                  <h2>₹{analytics?.summary?.total_disbursed || "4.85L"}</h2>
+                  <span>Disbursed today</span>
                 </div>
               </div>
             </div>
 
             {/* Tabs */}
             <div className="officer-tabs">
-              {["overview", "queue", "forecast"].map(tab => (
+              {["overview", "queue", "payments", "forecast"].map(tab => (
                 <button
                   key={tab}
                   className={`officer-tab ${activeTab === tab ? "officer-tab-active" : ""}`}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab === "overview" ? "📊 Slot Occupancy" : tab === "queue" ? "📋 Queue Management" : "📈 Crowd Forecast"}
+                  {tab === "overview" ? "📊 Slot Occupancy" : tab === "queue" ? "📋 Queue Management" : tab === "payments" ? "💳 Payments & DBT Audit" : "📈 Crowd Forecast"}
                 </button>
               ))}
             </div>
@@ -301,6 +293,85 @@ function OfficerDashboard() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: Payments & DBT Audit */}
+            {activeTab === "payments" && (
+              <div className="officer-panel">
+                <div className="officer-panel-header">
+                  <div>
+                    <h2>DBT Payment & Audit Status</h2>
+                    <p>Direct Benefit Transfers processed for today's procurement</p>
+                  </div>
+                  <div className="queue-count" style={{ background: "#e7f6ec", color: "#1f7a3f" }}>
+                    Total: ₹4,85,250
+                  </div>
+                </div>
+
+                <div className="officer-table-wrapper">
+                  <table className="officer-table">
+                    <thead>
+                      <tr>
+                        <th>Txn Ref</th>
+                        <th>Farmer ID</th>
+                        <th>Farmer Name</th>
+                        <th>Bank Account</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { ref: "DBT-TXN-994810294", id: "FARM-1001", farmer: "Ravi Kumar", bank: "SBI (****4821)", amount: "₹27,300", status: "RELEASED" },
+                        { ref: "DBT-TXN-994810295", id: "FARM-1002", farmer: "Suresh Patel", bank: "HDFC (****1192)", amount: "₹40,950", status: "PROCESSING" },
+                        { ref: "DBT-TXN-994810296", id: "FARM-1003", farmer: "Mohan Singh", bank: "PNB (****9920)", amount: "₹68,250", status: "RELEASED" },
+                        { ref: "DBT-TXN-994810297", id: "FARM-1004", farmer: "Deepak Yadav", bank: "BOB (****3301)", amount: "₹50,050", status: "PROCESSING" },
+                        { ref: "DBT-TXN-994810298", id: "FARM-1005", farmer: "Anil Sharma", bank: "Canara (****7712)", amount: "₹22,750", status: "RELEASED" },
+                      ].map((p, i) => (
+                        <tr key={i}>
+                          <td><code>{p.ref}</code></td>
+                          <td><strong>{p.id}</strong></td>
+                          <td>{p.farmer}</td>
+                          <td>{p.bank}</td>
+                          <td><strong>{p.amount}</strong></td>
+                          <td>
+                            <span 
+                              className="officer-status-badge" 
+                              style={{
+                                background: p.status === "RELEASED" ? "#e7f6ec" : "#fff7df",
+                                color: p.status === "RELEASED" ? "#1f7a3f" : "#b45309"
+                              }}
+                            >
+                              {p.status === "RELEASED" ? "✓ Released" : "⏳ Processing"}
+                            </span>
+                          </td>
+                          <td>
+                            {p.status === "PROCESSING" ? (
+                              <button 
+                                className="officer-act-serve"
+                                onClick={() => alert(`Direct Benefit Transfer ${p.ref} manually re-triggered!`)}
+                              >
+                                Approve DBT
+                              </button>
+                            ) : (
+                              <span style={{ color: "#16803c", fontSize: "12px", fontWeight: "600" }}>✓ Settled</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="op-help-panel" style={{ marginTop: "20px" }}>
+                  <span>🏛️</span>
+                  <div>
+                    <strong>Govt. Treasury & DBT Compliance</strong>
+                    <p>All procurement payments are governed by Public Financial Management System (PFMS). Payments are transferred directly into Aadhaar-seeded bank accounts within 24 hours.</p>
+                  </div>
                 </div>
               </div>
             )}

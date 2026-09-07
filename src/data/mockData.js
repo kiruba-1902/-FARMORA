@@ -63,16 +63,34 @@ export const queue = {
 };
 
 export const procurement = {
-  verification: "completed",
-  quality: "completed",
-  weighing: "current",
-  procurement: "pending",
-  payment: "pending",
+  token: "TKN-1-001",
+  bookingId: "BK-2026-0907-124",
+  crop: "Wheat",
+  quantity: 12,
+  rate: 2275,
+  totalAmount: 27300,
+  centre: "Central Grain Mandi - Ludhiana",
+  status: "Quality Check & Weighing",
+  steps: [
+    { id: 1, title: "Token Generated", time: "09:00 AM", status: "completed", details: "Token #A-124 issued successfully" },
+    { id: 2, title: "Identity Verification", time: "09:30 AM", status: "completed", details: "Aadhaar & Land records verified at Gate #2" },
+    { id: 3, title: "Quality Verification", time: "10:15 AM", status: "completed", details: "Grade A Grain approved (Moisture: 12%)" },
+    { id: 4, title: "Weighing & Drop-off", time: "10:45 AM", status: "in_progress", details: "Net weight calculation at Weighbridge #1" },
+    { id: 5, title: "DBT Payment Processing", time: "Pending", status: "pending", details: "Direct Benefit Transfer to Bank account ending in ****4821" },
+  ],
 };
 
 export const payment = {
-  quantity: 25,
-  rate: 2310,
-  total: 57750,
-  status: "Pending",
+  paymentId: "PAY-2026-8891",
+  farmerId: "FARM-1001",
+  farmerName: "Ravi Kumar",
+  bankAccount: "State Bank of India (****4821)",
+  ifsc: "SBIN0001234",
+  amount: 27300,
+  mspRate: 2275,
+  quantityQtl: 12,
+  paymentStatus: "PROCESSING", // "PROCESSING" | "RELEASED" | "FAILED"
+  transactionRef: "DBT-TXN-994810294",
+  initiatedDate: "2026-09-07",
+  estimatedPayoutDate: "2026-09-08 (Within 24 Hours)",
 };

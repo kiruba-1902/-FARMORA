@@ -220,22 +220,29 @@ function Procurement() {
 
         </div>
 
-        {/* Payment */}
+        {/* Payment & DBT Tracking */}
 
         <div className="payment-card">
 
           <div className="payment-header">
 
             <div>
-              <h2>💰 Estimated Payment</h2>
+              <h2>💰 Payment & DBT Tracking</h2>
 
               <p>
-                Based on current procurement price
+                Direct Benefit Transfer to Registered Bank Account
               </p>
             </div>
 
-            <span className="payment-status">
-              Pending
+            <span 
+              className="payment-status" 
+              style={{
+                background: paymentData.status === "RELEASED" ? "#e7f6ec" : "#fff7df",
+                color: paymentData.status === "RELEASED" ? "#1f7a3f" : "#b45309",
+                border: "1px solid currentColor"
+              }}
+            >
+              ● {paymentData.status || "PROCESSING"}
             </span>
 
           </div>
@@ -243,21 +250,21 @@ function Procurement() {
           <div className="payment-calculation">
 
             <div>
-              <span>Quantity</span>
+              <span>Procured Quantity</span>
               <strong>
                 {procurement.quantity} Qtl
               </strong>
             </div>
 
             <div>
-              <span>Rate</span>
+              <span>MSP Rate</span>
               <strong>
                 ₹{procurement.rate.toLocaleString()} / Qtl
               </strong>
             </div>
 
             <div className="payment-total">
-              <span>Estimated Total</span>
+              <span>Total Amount</span>
               <strong>
                 ₹{totalAmount.toLocaleString()}
               </strong>
@@ -265,9 +272,23 @@ function Procurement() {
 
           </div>
 
-          <div className="payment-note">
-            ℹ️ Final payment will be calculated after quality
-            verification, weighing and procurement confirmation.
+          <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid #f3f4f6", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", fontSize: "13px" }}>
+            <div>
+              <span style={{ color: "#6b7280", display: "block" }}>🏦 Credit Bank Account</span>
+              <strong>{paymentData.bankAccount || mockPayment.bankAccount}</strong>
+            </div>
+            <div>
+              <span style={{ color: "#6b7280", display: "block" }}>📄 DBT Transaction Ref</span>
+              <strong>{paymentData.transactionRef || mockPayment.transactionRef}</strong>
+            </div>
+            <div>
+              <span style={{ color: "#6b7280", display: "block" }}>⏱️ Estimated Payout</span>
+              <strong>{paymentData.estimatedPayoutDate || mockPayment.estimatedPayoutDate}</strong>
+            </div>
+          </div>
+
+          <div className="payment-note" style={{ marginTop: "14px" }}>
+            ℹ️ Payment directly credited via Govt. DBT (Direct Benefit Transfer) within 24 hours of procurement completion.
           </div>
 
         </div>
